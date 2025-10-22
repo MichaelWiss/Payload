@@ -1,10 +1,41 @@
-import payload from 'payload';
 import 'dotenv/config';
-import config from '../payload.config.js';
+import { getPayload } from 'payload';
+import config from '../payload.config';
 
 (async () => {
-  await payload.init({ config });
+  const payload = await getPayload({ config });
+
   console.log('Payload initialized');
-  // TODO: create categories, variants, products
+
+  const cat = await payload.create({
+    collection: 'categories',
+    data: { title: 'Shoes', slug: 'shoes' },
+  });
+
+  const v1 = await payload.create({
+    collection: 'variants',
+    data: { sku: 'RUN-001-9', title: 'Size 9', price: 12900, inventory: 10 },
+  });
+
+  const p = await payload.create({
+    collection: 'products',
+    data: {
+      title: 'Velocity Runner',
+      slug: 'velocity-runner',
+      categories: [cat.id],
+      variants: [v1.id],
+      defaultVariant: v1.id,
+      blocks: [
+        {
+          blockType: 'feature',
+          heading: 'Lightweight speed',
+          body: [{ children: [{ text: 'Built for tempo days.' }] }],
+        },
+      ],
+    },
+  });
+
+  console.log('Seeded product:', p.slug);
   process.exit(0);
 })();
+
