@@ -1,5 +1,6 @@
 import { buildConfig } from 'payload';
 import { postgresAdapter } from '@payloadcms/db-postgres';
+import { slateEditor } from '@payloadcms/richtext-slate';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -27,6 +28,7 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
+  editor: slateEditor({}),
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URL!,

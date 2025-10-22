@@ -3,14 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "cross-env PAYLOAD_CONFIG_PATH=src/payload.config.ts payload dev --port 4000",
-    "build": "cross-env PAYLOAD_CONFIG_PATH=src/payload.config.ts payload build",
-    "start": "cross-env NODE_ENV=production PAYLOAD_CONFIG_PATH=src/payload.config.ts payload serve --port 4000",
+    "dev": "next dev -p 4000",
+    "start": "NODE_ENV=production next start -p 4000",
+    "build": "next build",
     "seed": "tsx src/seed/seed.ts"
   },
   "dependencies": {
-    "@payloadcms/db-postgres": "^0.1.9",
-    "@payloadcms/richtext-slate": "^1.0.4",
+    "@payloadcms/db-postgres": "^3.60.0",
+    "@payloadcms/next": "^3.60.0",
+    "@payloadcms/richtext-slate": "^3.60.0",
     "cross-env": "^7.0.3",
     "dotenv": "^16.4.5",
     "payload": "^3.0.0",

@@ -1,16 +1,20 @@
+import type { Endpoint } from 'payload/config';
 import Stripe from 'stripe';
-import { getPayload } from 'payload';
-import config from '../payload.config';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
 
-export const stripeWebhookEndpoint: any = {
+export const stripeWebhookEndpoint: Endpoint = {
   path: '/stripe/webhook',
   method: 'post',
-  handler: async (req: any) => {
+  handler: async (req) => {
     try {
-      const sig = req.headers['stripe-signature'] as string;
-      const rawBody = req.body;
+      const sig = req.headers['stripe-signature'];
+      if (!sig) {
+        return Response.json({ error: 'Missing stripe-signature header' }, { status: 400 });
+      }
+
+      // Payload v3 provides rawBody for webhooks
+      const rawBody = req.body as Buffer | string;
 
       const event = stripe.webhooks.constructEvent(
         rawBody,
@@ -20,9 +24,9 @@ export const stripeWebhookEndpoint: any = {
 
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object as Stripe.Checkout.Session;
-        const payload = await getPayload({ config });
 
-        await payload.create({
+        // Use req.payload (injected by Payload v3)
+        await req.payload.create({
           collection: 'orders',
           data: {
             stripeId: session.id,
@@ -31,13 +35,14 @@ export const stripeWebhookEndpoint: any = {
             lineItems: [],
             metadata: session.metadata ?? {},
           },
+          overrideAccess: true, // Allow server-side creation regardless of access control
         });
       }
 
-      return new Response(JSON.stringify({ received: true }), { status: 200 });
+      return Response.json({ received: true });
     } catch (err: any) {
-      console.error(`Stripe webhook error: ${err.message}`);
-      return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+      req.payload.logger.error(`Stripe webhook error: ${err.message}`);
+      return Response.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
     }
   },
 };
