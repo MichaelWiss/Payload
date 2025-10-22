@@ -1,8 +1,11 @@
-import { CollectionConfig } from 'payload/types';
+import type { CollectionConfig } from 'payload';
 
 export const Products: CollectionConfig = {
   slug: 'products',
   admin: { useAsTitle: 'title' },
+  access: {
+    read: () => true, // Public read access for storefront
+  },
   fields: [
     { name: 'title', type: 'text', required: true },
     { name: 'slug', type: 'text', required: true, unique: true },

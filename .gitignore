@@ -17,6 +17,7 @@ out/
 
 # Payload
 payload-types.ts
+importMap.js
 .payload/
 media/
 public/uploads/

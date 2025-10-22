@@ -35,7 +35,14 @@ export default buildConfig({
     },
   }),
   secret: process.env.PAYLOAD_SECRET || '',
-  cors: (process.env.CORS_ORIGIN ?? '').split(',').filter(Boolean) || ['http://localhost:3000'],
+  cors: [
+    ...(process.env.CORS_ORIGIN ?? '').split(',').filter(Boolean),
+    'http://localhost:3000',
+  ],
+  csrf: [
+    ...(process.env.CORS_ORIGIN ?? '').split(',').filter(Boolean),
+    'http://localhost:3000',
+  ],
   endpoints: [stripeWebhookEndpoint],
 });
 

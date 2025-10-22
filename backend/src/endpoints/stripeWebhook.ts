@@ -1,4 +1,4 @@
-import type { Endpoint } from 'payload/config';
+import type { Endpoint, PayloadRequest } from 'payload';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
@@ -8,13 +8,17 @@ export const stripeWebhookEndpoint: Endpoint = {
   method: 'post',
   handler: async (req) => {
     try {
-      const sig = req.headers['stripe-signature'];
+      const sig = req.headers.get('stripe-signature');
       if (!sig) {
         return Response.json({ error: 'Missing stripe-signature header' }, { status: 400 });
       }
 
       // Payload v3 provides rawBody for webhooks
-      const rawBody = req.body as Buffer | string;
+      const rawBody = (req as PayloadRequest & { rawBody?: Buffer | string }).rawBody;
+
+      if (!rawBody) {
+        return Response.json({ error: 'Missing raw body for webhook' }, { status: 400 });
+      }
 
       const event = stripe.webhooks.constructEvent(
         rawBody,
@@ -40,9 +44,10 @@ export const stripeWebhookEndpoint: Endpoint = {
       }
 
       return Response.json({ received: true });
-    } catch (err: any) {
-      req.payload.logger.error(`Stripe webhook error: ${err.message}`);
-      return Response.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+    } catch (err) {
+      const error = err as Error;
+      req.payload.logger.error(`Stripe webhook error: ${error.message}`);
+      return Response.json({ error: `Webhook Error: ${error.message}` }, { status: 400 });
     }
   },
 };

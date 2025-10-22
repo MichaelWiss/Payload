@@ -1,11 +1,7 @@
-import { getPayload } from 'payload';
+import { REST_DELETE, REST_GET, REST_PATCH, REST_POST } from '@payloadcms/next/routes';
+import configPromise from '../../../src/payload.config';
 
-import config from '@/src/payload.config';
-
-const payload = await getPayload({ config });
-
-export const GET = payload.handlers.rest;
-export const POST = payload.handlers.rest;
-export const DELETE = payload.handlers.rest;
-export const PATCH = payload.handlers.rest;
-export const PUT = payload.handlers.rest;
+export const GET = REST_GET(configPromise);
+export const POST = REST_POST(configPromise);
+export const DELETE = REST_DELETE(configPromise);
+export const PATCH = REST_PATCH(configPromise);

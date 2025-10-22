@@ -1,8 +1,11 @@
-import { CollectionConfig } from 'payload/types';
+import type { CollectionConfig } from 'payload';
 
 export const Variants: CollectionConfig = {
   slug: 'variants',
   admin: { useAsTitle: 'sku' },
+  access: {
+    read: () => true, // Public read access for storefront
+  },
   fields: [
     { name: 'sku', type: 'text', required: true, unique: true },
     { name: 'title', type: 'text' },

@@ -2,9 +2,9 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": ".",
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -20,6 +20,13 @@
     "incremental": true,
     "isolatedModules": true,
     "jsx": "preserve",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/payload-types": ["./src/payload-types"],
+      "@/collections/*": ["./src/collections/*"],
+      "@/globals/*": ["./src/globals/*"],
+      "@/endpoints/*": ["./src/endpoints/*"]
+    },
     "plugins": [
       {
         "name": "next"
@@ -28,7 +35,9 @@
   },
   "include": [
     "src",
-    ".next/types/**/*.ts"
+    "app",
+    ".next/types/**/*.ts",
+    "next.config.mjs"
   ],
   "exclude": [
     "node_modules"

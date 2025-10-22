@@ -1,258 +1,37 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import "./page.css";
-import { fetchCategories, fetchFeaturedProducts, resolveVariants } from "@/lib/payload";
-import type { Media, Product } from "@/types/payload";
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import Link from 'next/link';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import './page.css';
+import { fetchCategories, fetchFeaturedProducts } from '@/lib/payload';
+import { formatPrice } from '@/lib/utils';
+import { mapProductToCard } from '@/lib/mappers';
+import { useCart } from '@/contexts/CartContext';
+import type { CartItem } from '@/types/cart';
+import {
+  fallbackCategories,
+  fallbackNewProducts,
+  fallbackBestProducts,
+  stages,
+  badges,
+  marqueeText,
+  type ProductCardData,
+} from '@/lib/constants';
 
-interface ProductCard {
-  id: string;
-  slug: string;
-  title: string;
-  priceCents: number | null;
-  tag: string;
-  image: string;
-}
-
-type StageStyle = CSSProperties & { "--stage-bg"?: string };
-
-const currencyFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
-
-const formatPrice = (cents: number | null): string => {
-  if (typeof cents !== "number") {
-    return "—";
-  }
-  return currencyFormatter.format(cents / 100);
-};
-
-const fallbackCategories = [
-  "Champagne 🥂",
-  "Orange 🍊",
-  "Red 🍒",
-  "Gin 🍸",
-  "Bitters 🍋",
-  "Vermouth 🫒",
-  "Non-Alc 🌿",
-  "Gift Sets 🎁",
-  "Barware 🧊",
-];
-
-const fallbackNewProducts: ProductCard[] = [
-  {
-    id: "placeholder-new-1",
-    slug: "days-non-alc-spritz",
-    title: "Days — Non-Alc Spritz",
-    priceCents: 650,
-    tag: "Citrus • Zippy",
-    image: "https://images.unsplash.com/photo-1542790595-cb7b95fef7c4?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-new-2",
-    slug: "public-radio-red-blend",
-    title: "Public Radio — Red Blend",
-    priceCents: 2200,
-    tag: "Plum • Spice",
-    image: "https://images.unsplash.com/photo-1566207474742-de921626ad94?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-new-3",
-    slug: "skin-contact-soft-serve",
-    title: "Skin Contact — Soft Serve",
-    priceCents: 2800,
-    tag: "Apricot • Saline",
-    image: "https://images.unsplash.com/photo-1547592166-23ac45744acd?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-new-4",
-    slug: "cold-cheese-zine",
-    title: "Cold Cheese — Zine #3",
-    priceCents: 1400,
-    tag: "Pizza Lore",
-    image: "https://images.unsplash.com/photo-1532635206-37e9b05b3fd0?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-new-5",
-    slug: "champagne-pop",
-    title: "Champagne Pop!",
-    priceCents: 4900,
-    tag: "Spark • Toast",
-    image: "https://images.unsplash.com/photo-1541976076758-347942db1976?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-new-6",
-    slug: "negroni-bitters",
-    title: "Negroni Bitters",
-    priceCents: 1800,
-    tag: "Bitter • Orange",
-    image: "https://images.unsplash.com/photo-1541976076755-3192f9a8a3c2?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-new-7",
-    slug: "wild-vermouth",
-    title: "Wild Vermouth",
-    priceCents: 1900,
-    tag: "Herbal • Dry",
-    image: "https://images.unsplash.com/photo-1541976076754-95a2a5c7d2b7?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-new-8",
-    slug: "gift-set-starter-pack",
-    title: "Gift Set — Starter Pack",
-    priceCents: 3900,
-    tag: "Curated • Fun",
-    image: "https://images.unsplash.com/photo-1481833761820-0509d3217039?q=80&w=900&auto=format&fit=crop",
-  },
-];
-
-const fallbackBestProducts: ProductCard[] = [
-  {
-    id: "placeholder-best-1",
-    slug: "citrus-spritz-pack",
-    title: "Citrus Spritz Pack",
-    priceCents: 2400,
-    tag: "4-pack",
-    image: "https://images.unsplash.com/photo-1505250469679-203ad9ced0cb?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-best-2",
-    slug: "vibe-tonic-soda",
-    title: "Vibe Tonic & Soda",
-    priceCents: 1200,
-    tag: "Herbal",
-    image: "https://images.unsplash.com/photo-1541976076756-6f45cbf0644b?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-best-3",
-    slug: "house-vermouth",
-    title: "House Vermouth",
-    priceCents: 2100,
-    tag: "Dry",
-    image: "https://images.unsplash.com/photo-1617806118233-18e1df6c5b25?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-best-4",
-    slug: "club-gift-set",
-    title: "Club Gift Set",
-    priceCents: 5900,
-    tag: "Member favorite",
-    image: "https://images.unsplash.com/photo-1551024601-bec78aea704b?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-best-5",
-    slug: "red-blend-radio",
-    title: "Red Blend — Radio",
-    priceCents: 2300,
-    tag: "Cherry • Spice",
-    image: "https://images.unsplash.com/photo-1541976076757-1b3a3a17cf1f?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-best-6",
-    slug: "spritz-blood-orange",
-    title: "Spritz — Blood Orange",
-    priceCents: 1600,
-    tag: "Zippy",
-    image: "https://images.unsplash.com/photo-1524594081293-190a2fe0baae?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-best-7",
-    slug: "bitter-aperitivo",
-    title: "Bitter Aperitivo",
-    priceCents: 1900,
-    tag: "Classic",
-    image: "https://images.unsplash.com/photo-1541976076753-7f2d4b0c7a5e?q=80&w=900&auto=format&fit=crop",
-  },
-  {
-    id: "placeholder-best-8",
-    slug: "gift-pack-pizza-night",
-    title: "Gift Pack — Pizza Night",
-    priceCents: 6900,
-    tag: "Bundle",
-    image: "https://images.unsplash.com/photo-1541976076752-6a88f4e8f7e3?q=80&w=900&auto=format&fit=crop",
-  },
-];
-
-const fallbackProductImages = Array.from(
-  new Set([...fallbackNewProducts, ...fallbackBestProducts].map((product) => product.image))
-);
-
-const stages = [
-  {
-    title: "Why this shop exists",
-    copy: "Because good taste shouldn’t be quiet. We champion lo-fi producers, big flavor, and culture-first stories. Expect sticker chaos and serious product quality.",
-    background: "https://images.unsplash.com/photo-1604908554049-2fdefc39f6df?q=80&w=1600&auto=format&fit=crop",
-  },
-  {
-    title: "Small makers, big punches",
-    copy: "Limited drops, fresh allocations, and a bias toward indie operations. Join the Club for early access and member pricing.",
-    background: "https://images.unsplash.com/photo-1514362544053-4f54f0f3b4d3?q=80&w=1600&auto=format&fit=crop",
-  },
-  {
-    title: "Built for exploration",
-    copy: "Use vibe categories, zine reviews, and tasting notes that don’t sound like robots. It’s a store, but it’s also a playground.",
-    background: "https://images.unsplash.com/photo-1510626176961-4b57d4fbad03?q=80&w=1600&auto=format&fit=crop",
-  },
-];
-
-const badges = [
-  {
-    label: "Member Prices",
-    copy: "  ✷  EARLY ALLOCATIONS  ✷  ZINE ACCESS  ✷  ",
-    rotate: 1,
-  },
-  {
-    label: "Free Stickers",
-    copy: "  ✷  PIZZA ENERGY  ✷  OUTRAGEOUS TASTE  ✷  ",
-    rotate: -1,
-  },
-  {
-    label: "Non-Alc Love",
-    copy: "  ✷  ZERO PROOF  ✷  FULL FLAVOR  ✷  ",
-    rotate: 1.2,
-  },
-];
-
-const marqueeText = "✷ NO BAD VIBES ✷ ZERO PROOF ✷ FULL FLAVOR ✷";
+type StageStyle = CSSProperties & { '--stage-bg'?: string };
 
 export default function Home() {
   const rootRef = useRef<HTMLDivElement>(null);
+  const { addItem, items } = useCart();
   const [categoryLabels, setCategoryLabels] = useState<string[]>(fallbackCategories);
-  const [newProducts, setNewProducts] = useState<ProductCard[]>(fallbackNewProducts);
-  const [bestProducts, setBestProducts] = useState<ProductCard[]>(fallbackBestProducts);
+  const [newProducts, setNewProducts] = useState<ProductCardData[]>(fallbackNewProducts);
+  const [bestProducts, setBestProducts] = useState<ProductCardData[]>(fallbackBestProducts);
 
   useEffect(() => {
     let cancelled = false;
-
-    const mapProductToCard = (product: Product, index: number): ProductCard => {
-      const variants = resolveVariants(product.variants);
-      const preferredVariant =
-        typeof product.defaultVariant === "object" && product.defaultVariant !== null
-          ? product.defaultVariant
-          : variants[0];
-      const priceCents = preferredVariant?.price ?? null;
-      const categoryTitles = (product.categories ?? [])
-        .map((category) => (typeof category === "string" ? null : category?.title))
-        .filter((title): title is string => Boolean(title));
-      const tag = categoryTitles.slice(0, 2).join(" • ") || product.description?.slice(0, 40) || "Limited drop";
-      const imageMedia = (product.images ?? []).find(
-        (image): image is Media => typeof image !== "string"
-      );
-      const fallbackImage = fallbackProductImages[index % fallbackProductImages.length];
-
-      return {
-        id: product.id,
-        slug: product.slug,
-        title: product.title,
-        priceCents,
-        tag,
-        image: imageMedia?.url ?? fallbackImage,
-      };
-    };
 
     const load = async () => {
       try {
@@ -413,6 +192,27 @@ export default function Home() {
 
   const marqueeItems = categoryLabels.length ? categoryLabels : fallbackCategories;
 
+  const handleAddToCart = (product: ProductCardData) => {
+    // Create a cart item from the product card data
+    // Using the product ID as variant ID since we're showing the default variant
+    const cartItem: CartItem = {
+      productId: product.id,
+      productSlug: product.slug,
+      title: product.title,
+      variantId: product.id, // Using product ID as variant for now
+      variantTitle: 'Default', // Could be enhanced with actual variant data
+      price: product.priceCents || 0,
+      quantity: 1,
+    };
+    
+    addItem(cartItem);
+    
+    // Optional: Show a brief confirmation (you could add a toast notification here)
+    console.log('Added to cart:', product.title);
+  };
+
+  const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <div ref={rootRef}>
       <div className="progress" aria-hidden />
@@ -433,8 +233,8 @@ export default function Home() {
             <button className="pill" type="button">
               Club
             </button>
-            <button className="pill" type="button">
-              Cart (2)
+            <button className="pill" type="button" onClick={() => window.location.href = '/cart'}>
+              Cart ({cartItemCount})
             </button>
           </div>
         </nav>
@@ -515,16 +315,18 @@ export default function Home() {
         <section className="grid" id="products-new" style={{ margin: "16px 0 28px" }}>
           {newProducts.map((product) => (
             <article className="product reveal" key={product.id}>
-              <div
-                className="img"
-                style={{ backgroundImage: `url('${product.image}')` }}
-                aria-hidden
-              />
-              <h3>{product.title}</h3>
-              <div className="meta">{product.tag}</div>
+              <Link href={`/products/${product.slug}`}>
+                <div
+                  className="img"
+                  style={{ backgroundImage: `url('${product.image}')` }}
+                  aria-hidden
+                />
+                <h3>{product.title}</h3>
+                <div className="meta">{product.tag}</div>
+              </Link>
               <div className="buy">
                 <span className="price">{formatPrice(product.priceCents)}</span>
-                <button className="btn" type="button">
+                <button className="btn" type="button" onClick={() => handleAddToCart(product)}>
                   Add to Cart
                 </button>
               </div>
@@ -580,16 +382,18 @@ export default function Home() {
         <section className="grid" id="products-best" style={{ margin: "16px 0 28px" }}>
           {bestProducts.map((product) => (
             <article className="product reveal" key={product.id}>
-              <div
-                className="img"
-                style={{ backgroundImage: `url('${product.image}')` }}
-                aria-hidden
-              />
-              <h3>{product.title}</h3>
-              <div className="meta">{product.tag}</div>
+              <Link href={`/products/${product.slug}`}>
+                <div
+                  className="img"
+                  style={{ backgroundImage: `url('${product.image}')` }}
+                  aria-hidden
+                />
+                <h3>{product.title}</h3>
+                <div className="meta">{product.tag}</div>
+              </Link>
               <div className="buy">
                 <span className="price">{formatPrice(product.priceCents)}</span>
-                <button className="btn" type="button">
+                <button className="btn" type="button" onClick={() => handleAddToCart(product)}>
                   Add to Cart
                 </button>
               </div>
