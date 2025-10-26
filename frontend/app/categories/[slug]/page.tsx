@@ -1,15 +1,21 @@
-import { notFound } from 'next/navigation';
+import '../../page.css';
+import '../collections.css';
 import type { Metadata } from 'next';
-import { fetchCategoryBySlug, fetchProductsByCategoryId } from '@/lib/payload';
-import { CategoryPageClient } from './CategoryPageClient';
+import { notFound } from 'next/navigation';
+import {
+  fetchCategories,
+  fetchCategoryBySlug,
+  fetchProductsByCategoryId,
+} from '@/lib/payload';
+import { mapProductToCard } from '@/lib/mappers';
+import { CollectionPageClient } from '@/components/sections/CollectionPageClient';
 
 interface CategoryPageProps {
-  params: Promise<{ slug: string }>;
+  params: { slug: string };
 }
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const category = await fetchCategoryBySlug(slug);
+  const category = await fetchCategoryBySlug(params.slug);
 
   if (!category) {
     return {
@@ -24,15 +30,37 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
-  const { slug } = await params;
-  const category = await fetchCategoryBySlug(slug);
+  const category = await fetchCategoryBySlug(params.slug);
 
   if (!category) {
     notFound();
   }
 
-  // Fetch products for this category
-  const products = await fetchProductsByCategoryId(category.id);
+  const [categories, products] = await Promise.all([
+    fetchCategories(),
+    fetchProductsByCategoryId(category.id),
+  ]);
 
-  return <CategoryPageClient category={category} products={products} />;
+  const productCards = products.map((product, index) => mapProductToCard(product, index));
+  const marqueeItems = categories.map((item) => item.title).filter(Boolean);
+
+  const description = category.description
+    ? category.description
+    : `Explore the latest from our ${category.title} collection.`;
+
+  return (
+    <CollectionPageClient
+      title={category.title ?? 'Category'}
+      description={description}
+      products={productCards}
+      sourceProducts={products}
+      marqueeItems={marqueeItems}
+      breadcrumbs={[
+        { label: 'Home', href: '/' },
+        { label: 'Categories', href: '/categories' },
+        { label: category.title ?? 'Category' },
+      ]}
+      emptyMessage={`No products found in ${category.title}. Check back soon!`}
+    />
+  );
 }

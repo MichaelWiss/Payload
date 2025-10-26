@@ -1,7 +1,9 @@
+import '../page.css';
+import './collections.css';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { fetchCategories } from '@/lib/payload';
-import './categories-index.css';
+import { SiteHeader, SiteFooter } from '@/components/sections/SiteChrome';
 
 export const metadata: Metadata = {
   title: 'Shop by Category — Outrageous Store',
@@ -10,23 +12,30 @@ export const metadata: Metadata = {
 
 export default async function CategoriesPage() {
   const categories = await fetchCategories();
+  const marqueeItems = categories.map((category) => category.title).filter(Boolean);
 
   return (
-    <div className="categories-index">
-      <div className="wrap">
-        <nav className="categories-breadcrumb">
-          <Link href="/">Home</Link>
-          <span>/</span>
-          <span>Categories</span>
+    <div className="collection-layout">
+      <SiteHeader marqueeItems={marqueeItems} />
+      <main className="wrap collection-body">
+        <nav className="breadcrumb">
+          <span className="breadcrumb-item">
+            <Link href="/">Home</Link>
+            <span className="breadcrumb-separator">/</span>
+          </span>
+          <span className="breadcrumb-item">Categories</span>
         </nav>
 
-        <header className="categories-header">
-          <h1>Shop by Category</h1>
-          <p>Explore our curated collections of artisan products, zines, and more.</p>
-        </header>
+        <section className="collection-hero reveal">
+          <div>
+            <span className="snipe">Explore everything</span>
+            <h1>Shop by Category</h1>
+            <p>Discover artisan products, zines, and tasty curios tailored to every palate.</p>
+          </div>
+        </section>
 
         {categories.length > 0 ? (
-          <div className="categories-grid">
+          <div className="grid home-products">
             {categories.map((category) => {
               const imageUrl =
                 category.image && typeof category.image === 'object'
@@ -34,38 +43,36 @@ export default async function CategoriesPage() {
                   : null;
 
               return (
-                <Link
-                  key={category.id}
-                  href={`/categories/${category.slug}`}
-                  className="category-card"
-                >
-                  {imageUrl && (
+                <article className="product reveal" key={category.id}>
+                  <Link href={`/categories/${category.slug}`}>
                     <div
-                      className="category-card-image"
-                      style={{ backgroundImage: `url('${imageUrl}')` }}
+                      className="img"
+                      style={{
+                        backgroundImage: imageUrl ? `url('${imageUrl}')` : 'none',
+                        backgroundColor: imageUrl ? 'transparent' : 'var(--cream)',
+                      }}
                       aria-hidden
                     />
-                  )}
-                  <div className="category-card-content">
-                    <h2>{category.title}</h2>
-                    {category.description && <p>{category.description}</p>}
+                    <h3>{category.title}</h3>
+                    {category.description && <div className="meta">{category.description}</div>}
+                  </Link>
+                  <div className="buy">
+                    <span className="price">Explore</span>
+                    <Link className="btn" href={`/categories/${category.slug}`}>
+                      View
+                    </Link>
                   </div>
-                </Link>
+                </article>
               );
             })}
           </div>
         ) : (
-          <div className="categories-empty">
+          <div className="collection-empty">
             <p>No categories available yet. Check back soon!</p>
           </div>
         )}
-
-        <div className="categories-back">
-          <Link href="/" className="pill">
-            ← Back to Home
-          </Link>
-        </div>
-      </div>
+      </main>
+      <SiteFooter />
     </div>
   );
 }

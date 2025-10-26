@@ -13,7 +13,12 @@ export function ProductGrid({ title, products, onAddToCart }: ProductGridProps) 
       <h2 className="title reveal">{title}</h2>
       <section className="grid" style={{ margin: '16px 0 28px' }}>
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
+          <ProductCard
+            key={product.id}
+            product={product}
+            href={`/products/${product.slug}`}
+            onAddToCart={onAddToCart}
+          />
         ))}
       </section>
     </>

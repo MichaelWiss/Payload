@@ -1,39 +1,54 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { VariantSelector, ProductBlockRenderer } from '@/components/ui';
+import { useCart } from '@/contexts/CartContext';
 import { useAddToCart } from '@/lib/hooks/useAddToCart';
 import { resolveVariants } from '@/lib/payload';
-import { formatPrice } from '@/lib/utils';
-import type { Product, Media } from '@/types/payload';
+import type { Product, Variant, Media } from '@/types/payload';
+import type { ProductCardData } from '@/lib/constants';
+import { ProductCard } from '@/components/ui/ProductCard';
+import { SiteHeader, SiteFooter } from '@/components/sections/SiteChrome';
 import './product-detail.css';
 
 interface ProductDetailClientProps {
   product: Product;
+  relatedProducts: Product[];
+  relatedProductCards: ProductCardData[];
+  marqueeItems: string[];
 }
 
-export function ProductDetailClient({ product }: ProductDetailClientProps) {
-  const variants = resolveVariants(product.variants);
+export function ProductDetailClient({
+  product,
+  relatedProducts,
+  relatedProductCards,
+  marqueeItems,
+}: ProductDetailClientProps) {
+  const { items } = useCart();
   const { addToCart } = useAddToCart();
 
-  // Get default variant or first available
+  const variants = resolveVariants(product.variants);
   const defaultVariant =
     typeof product.defaultVariant === 'object' && product.defaultVariant !== null
       ? product.defaultVariant
       : variants[0];
 
-  const [selectedVariantId, setSelectedVariantId] = useState(
-    defaultVariant?.id || variants[0]?.id || ''
-  );
+  const [selectedVariantId, setSelectedVariantId] = useState(defaultVariant?.id || variants[0]?.id || '');
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [confirmation, setConfirmation] = useState('');
 
-  const selectedVariant = variants.find((v) => v.id === selectedVariantId) || variants[0];
+  const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) || variants[0];
+
+  const cartItemCount = useMemo(
+    () => items.reduce((sum, item) => sum + item.quantity, 0),
+    [items]
+  );
 
   if (!selectedVariant) {
     return (
-      <div className="wrap pdp-error">
+      <div className="pdp-empty">
         <p>This product is currently unavailable.</p>
         <Link href="/" className="btn">
           Back to Home
@@ -42,106 +57,125 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
     );
   }
 
-  // Get product images
   const images: Media[] = (product.images || []).filter(
     (img): img is Media => typeof img === 'object' && img !== null
   );
 
-  // Get category breadcrumbs
   const categories = (product.categories || [])
     .map((cat) => (typeof cat === 'string' ? null : cat))
     .filter((cat): cat is NonNullable<typeof cat> => cat !== null);
 
+  const isOutOfStock = selectedVariant.inventory <= 0;
+  const maxQuantity = Math.min(selectedVariant.inventory || 0, 10) || 10;
+
+  const detailItems = selectedVariant.attributes?.filter((attr) => attr?.name && attr?.value) ?? [];
+
   const handleAddToCart = () => {
+    if (!selectedVariant) return;
+
     addToCart(product, selectedVariant, quantity);
-    // Optional: Show toast notification
-    alert(`Added ${quantity}x ${product.title} (${selectedVariant.title}) to cart!`);
+    setConfirmation(`Added ${quantity}× ${product.title}`);
+    setTimeout(() => setConfirmation(''), 2400);
   };
 
-  const isOutOfStock = selectedVariant.inventory <= 0;
-  const maxQuantity = Math.min(selectedVariant.inventory, 10);
+  const handleAddRelated = (related: Product) => {
+    const relatedVariants = resolveVariants(related.variants);
+    const primaryVariant =
+      typeof related.defaultVariant === 'object' && related.defaultVariant !== null
+        ? related.defaultVariant
+        : relatedVariants[0];
+
+    if (primaryVariant) {
+      addToCart(related, primaryVariant, 1);
+      setConfirmation(`Added 1× ${related.title}`);
+    }
+  };
 
   return (
-    <div className="pdp-container">
-      {/* Breadcrumb */}
-      <nav className="wrap pdp-breadcrumb">
-        <Link href="/">Home</Link>
-        {categories[0] && (
-          <>
-            <span>/</span>
-            <Link href={`/categories/${categories[0].slug}`}>{categories[0].title}</Link>
-          </>
-        )}
-        <span>/</span>
-        <span>{product.title}</span>
-      </nav>
-
-      <div className="wrap pdp-grid">
-        {/* Image Gallery */}
-        <div className="pdp-gallery">
-          {images.length > 0 ? (
+    <div className="pdp-layout">
+      <SiteHeader marqueeItems={marqueeItems} cartItemCount={cartItemCount} />
+      <main className="wrap pdp-body">
+        <nav className="breadcrumb">
+          <Link href="/">Home</Link>
+          <span className="breadcrumb-separator">/</span>
+          {categories[0] ? (
             <>
-              <div className="pdp-main-image">
+              <Link href={`/categories/${categories[0].slug}`}>{categories[0].title}</Link>
+              <span className="breadcrumb-separator">/</span>
+            </>
+          ) : null}
+          <span>{product.title}</span>
+        </nav>
+
+        <section className="pdp-hero">
+          <div className="pdp-gallery">
+            <div className="pdp-image-frame">
+              {images.length > 0 ? (
                 <img
                   src={images[activeImageIndex].url}
                   alt={images[activeImageIndex].alt || product.title}
                 />
+              ) : (
+                <div className="pdp-image-placeholder">No image available</div>
+              )}
+            </div>
+            {images.length > 1 && (
+              <div className="pdp-thumbnails">
+                {images.map((image, index) => (
+                  <button
+                    key={image.id}
+                    type="button"
+                    className={`pdp-thumbnail ${index === activeImageIndex ? 'active' : ''}`}
+                    onClick={() => setActiveImageIndex(index)}
+                    aria-label={`View image ${index + 1}`}
+                  >
+                    <img src={image.url} alt={image.alt || `Product image ${index + 1}`} />
+                  </button>
+                ))}
               </div>
-              {images.length > 1 && (
-                <div className="pdp-thumbnails">
-                  {images.map((image, index) => (
-                    <button
-                      key={image.id}
-                      type="button"
-                      className={`pdp-thumbnail ${index === activeImageIndex ? 'active' : ''}`}
-                      onClick={() => setActiveImageIndex(index)}
-                      aria-label={`View image ${index + 1}`}
-                    >
-                      <img src={image.url} alt={image.alt || `Product image ${index + 1}`} />
-                    </button>
+            )}
+          </div>
+
+          <aside className="pdp-panel">
+            <header className="pdp-panel-header">
+              <h1>{product.title}</h1>
+              {product.description && <p>{product.description}</p>}
+            </header>
+
+            {detailItems.length > 0 && (
+              <dl className="pdp-details-list">
+                {detailItems.map((attr) => (
+                  <div key={`${attr.name}-${attr.value}`}>
+                    <dt>{attr.name}</dt>
+                    <dd>{attr.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+
+            <div className="pdp-meta">
+              <div className="pdp-price">{formatCurrency(selectedVariant.price)}</div>
+              {categories.length > 0 && (
+                <div className="pdp-tags">
+                  {categories.map((cat) => (
+                    <Link href={`/categories/${cat.slug}`} key={cat.id} className="pdp-tag">
+                      {cat.title}
+                    </Link>
                   ))}
                 </div>
               )}
-            </>
-          ) : (
-            <div className="pdp-no-image">
-              <p>No image available</p>
             </div>
-          )}
-        </div>
 
-        {/* Product Info */}
-        <div className="pdp-info">
-          <h1 className="pdp-title">{product.title}</h1>
+            {variants.length > 1 && (
+              <VariantSelector
+                variants={variants}
+                selectedVariantId={selectedVariantId}
+                onSelectVariant={setSelectedVariantId}
+              />
+            )}
 
-          {categories.length > 0 && (
-            <div className="pdp-categories">
-              {categories.map((cat) => (
-                <Link key={cat.id} href={`/categories/${cat.slug}`} className="pdp-category-tag">
-                  {cat.title}
-                </Link>
-              ))}
-            </div>
-          )}
-
-          <div className="pdp-price">{formatPrice(selectedVariant.price)}</div>
-
-          {product.description && <p className="pdp-description">{product.description}</p>}
-
-          {/* Variant Selector */}
-          {variants.length > 0 && (
-            <VariantSelector
-              variants={variants}
-              selectedVariantId={selectedVariantId}
-              onSelectVariant={setSelectedVariantId}
-            />
-          )}
-
-          {/* Quantity & Add to Cart */}
-          <div className="pdp-actions">
-            <div className="pdp-quantity">
-              <label htmlFor="quantity">Quantity</label>
-              <div className="quantity-controls">
+            <div className="pdp-actions">
+              <div className="quantity-controls" aria-live="polite">
                 <button
                   type="button"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -150,19 +184,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                 >
                   −
                 </button>
-                <input
-                  id="quantity"
-                  type="number"
-                  min="1"
-                  max={maxQuantity}
-                  value={quantity}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value, 10);
-                    if (!isNaN(val)) {
-                      setQuantity(Math.max(1, Math.min(maxQuantity, val)));
-                    }
-                  }}
-                />
+                <span>{quantity}</span>
                 <button
                   type="button"
                   onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
@@ -172,44 +194,75 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                   +
                 </button>
               </div>
+              <button
+                type="button"
+                className="btn pdp-add-to-cart"
+                onClick={handleAddToCart}
+                disabled={isOutOfStock}
+              >
+                {isOutOfStock ? 'Out of Stock' : `Add to Cart — ${formatCurrency(selectedVariant.price)}`}
+              </button>
             </div>
+            {confirmation && <p className="pdp-confirmation">{confirmation}</p>}
 
-            <button
-              type="button"
-              className="btn pdp-add-to-cart"
-              onClick={handleAddToCart}
-              disabled={isOutOfStock}
-            >
-              {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-            </button>
-          </div>
+            {!isOutOfStock && selectedVariant.inventory < 10 && (
+              <p className="pdp-stock-warning">Only {selectedVariant.inventory} left in stock!</p>
+            )}
 
-          {!isOutOfStock && selectedVariant.inventory < 10 && (
-            <p className="pdp-stock-warning">Only {selectedVariant.inventory} left in stock!</p>
-          )}
+            <div className="pdp-meta-grid">
+              <div>
+                <strong>SKU</strong>
+                <span>{selectedVariant.sku}</span>
+              </div>
+              <div>
+                <strong>Inventory</strong>
+                <span>{selectedVariant.inventory}</span>
+              </div>
+              <div>
+                <strong>Currency</strong>
+                <span>{selectedVariant.currency?.toUpperCase?.() || 'USD'}</span>
+              </div>
+            </div>
+          </aside>
+        </section>
 
-          {/* SKU & Meta */}
-          <div className="pdp-meta">
-            <p>
-              <strong>SKU:</strong> {selectedVariant.sku}
-            </p>
-          </div>
-        </div>
-      </div>
+        {product.blocks && product.blocks.length > 0 && (
+          <section className="pdp-blocks">
+            <ProductBlockRenderer blocks={product.blocks} />
+          </section>
+        )}
 
-      {/* Product Blocks (Features, Specs, etc.) */}
-      {product.blocks && product.blocks.length > 0 && (
-        <div className="wrap pdp-blocks">
-          <ProductBlockRenderer blocks={product.blocks} />
-        </div>
-      )}
-
-      {/* Back Link */}
-      <div className="wrap pdp-back">
-        <Link href="/" className="pill">
-          ← Continue Shopping
-        </Link>
-      </div>
+        {relatedProductCards.length > 0 && (
+          <section className="pdp-related">
+            <h2>Similar Products</h2>
+            <div className="grid home-products">
+              {relatedProductCards.map((card) => (
+                <ProductCard
+                  key={card.id}
+                  product={card}
+                  href={`/products/${card.slug}`}
+                  onAddToCart={() => {
+                    const match = relatedProducts.find((item) => item.slug === card.slug);
+                    if (match) {
+                      handleAddRelated(match);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+      <SiteFooter />
     </div>
   );
+}
+
+function formatCurrency(value?: number | null) {
+  if (typeof value !== 'number') return '—';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+  }).format(value / 100);
 }

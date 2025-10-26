@@ -58,8 +58,9 @@ header{
   box-shadow:0 4px 0 0 #000;
   background:none;
 }
-.brand.keith-logo span{
+.brand.keith-logo .logo-letter{
   display:inline-block;
+  font-family:'Arial Black',Arial,sans-serif;
   font-size:28px;
   font-weight:900;
   letter-spacing:2px;
@@ -71,12 +72,8 @@ header{
   -webkit-text-fill-color:transparent;
   -webkit-text-stroke:1.25px #000;
   text-stroke:1.25px #000;
-  filter:drop-shadow(2px 2px 0px #000);
+  filter:drop-shadow(3px 3px 0px #000);
   line-height:1;
-}
-.brand.keith-logo span:nth-child(5){
-  transform:translateY(-1px) scale(1.06);
-  letter-spacing:.5px;
 }
 .links{
   margin-left:auto;
@@ -256,6 +253,9 @@ h1{
   display:grid;
   grid-template-columns:repeat(4,1fr);
   gap:18px;
+}
+.grid.home-products{
+  margin:16px 0 28px;
 }
 @media (max-width:1100px){
   .grid{grid-template-columns:repeat(3,1fr);}
