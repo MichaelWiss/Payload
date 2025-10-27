@@ -7,10 +7,11 @@ import {
   fetchFeaturedProducts,
   fetchProductBySlug,
   fetchProductsByCategoryId,
-} from '@/lib/payload';
+} from '@/lib/payload/server';
 import { mapProductToCard } from '@/lib/mappers';
 import type { Product } from '@/types/payload';
 import { ProductDetailClient } from './ProductDetailClient';
+import { ProductUnavailable } from './ProductUnavailable';
 
 interface ProductPageProps {
   params: { slug: string };
@@ -35,14 +36,28 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const product = await fetchProductBySlug(params.slug);
+  const [categories, product] = await Promise.all([
+    fetchCategories(),
+    fetchProductBySlug(params.slug),
+  ]);
+
+  const marqueeItems = categories.map((category) => category.title).filter(Boolean);
 
   if (!product) {
-    notFound();
-  }
+    const suggested = await fetchFeaturedProducts(8);
+    const suggestedCards = suggested
+      .filter((item) => item.slug !== params.slug)
+      .slice(0, 4)
+      .map((item, index) => mapProductToCard(item, index));
 
-  const categories = await fetchCategories();
-  const marqueeItems = categories.map((category) => category.title).filter(Boolean);
+    return (
+      <ProductUnavailable
+        slug={params.slug}
+        marqueeItems={marqueeItems}
+        suggestedProducts={suggestedCards}
+      />
+    );
+  }
 
   const relatedProducts = await getRelatedProducts(product);
   const relatedCards = relatedProducts.map((related, index) => mapProductToCard(related, index));

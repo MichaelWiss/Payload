@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { formatPrice } from '@/lib/utils';
 import type { Product, Variant } from '@/types/payload';
-import { resolveVariants } from '@/lib/payload';
+import { resolveVariants } from '@/lib/payload/utils';
 
 interface ImprovedProductCardProps {
   product: Product;

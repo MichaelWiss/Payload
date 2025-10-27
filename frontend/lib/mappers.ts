@@ -4,7 +4,7 @@
 
 import type { Product, Media } from '@/types/payload';
 import type { ProductCardData } from './constants';
-import { resolveVariants } from './payload';
+import { resolveVariants } from './payload/utils';
 import { getFallbackImage } from './utils';
 import { fallbackProductImages } from './constants';
 

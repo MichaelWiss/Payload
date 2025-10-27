@@ -1,8 +1,8 @@
 import '../page.css';
-import './collections.css';
+import '../collections/collections.css';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { fetchCategories } from '@/lib/payload';
+import { fetchCategories } from '@/lib/payload/server';
 import { SiteHeader, SiteFooter } from '@/components/sections/SiteChrome';
 
 export const metadata: Metadata = {

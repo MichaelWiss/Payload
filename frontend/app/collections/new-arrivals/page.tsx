@@ -1,7 +1,7 @@
 import '../../page.css';
 import '../collections.css';
 import type { Metadata } from 'next';
-import { fetchCategories, fetchFeaturedProducts } from '@/lib/payload';
+import { fetchCategories, fetchFeaturedProducts } from '@/lib/payload/server';
 import { mapProductToCard } from '@/lib/mappers';
 import { CollectionPageClient } from '@/components/sections/CollectionPageClient';
 

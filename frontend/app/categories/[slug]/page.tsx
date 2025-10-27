@@ -1,12 +1,12 @@
 import '../../page.css';
-import '../collections.css';
+import '../collections/collections.css';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import {
   fetchCategories,
   fetchCategoryBySlug,
   fetchProductsByCategoryId,
-} from '@/lib/payload';
+} from '@/lib/payload/server';
 import { mapProductToCard } from '@/lib/mappers';
 import { CollectionPageClient } from '@/components/sections/CollectionPageClient';
 

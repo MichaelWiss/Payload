@@ -3,7 +3,6 @@ import type {
   Category,
   PayloadListResponse,
   Product,
-  Variant,
 } from "@/types/payload";
 
 type FetchOptions = RequestInit & {
@@ -32,18 +31,28 @@ async function payloadFetch<T>(path: string, init?: FetchOptions): Promise<T> {
 }
 
 export async function fetchCategories(): Promise<Category[]> {
-  const data = await payloadFetch<PayloadListResponse<Category>>(
-    `/api/categories?limit=100&sort=title`
-  );
-  return data.docs;
+  try {
+    const data = await payloadFetch<PayloadListResponse<Category>>(
+      `/api/categories?limit=100&sort=title`
+    );
+    return data.docs;
+  } catch (error) {
+    console.error('Failed to fetch categories from Payload:', error);
+    return [];
+  }
 }
 
 export async function fetchCategoryBySlug(slug: string): Promise<Category | null> {
-  const data = await payloadFetch<PayloadListResponse<Category>>(
-    `/api/categories?where[slug][equals]=${slug}&limit=1`
-  );
+  try {
+    const data = await payloadFetch<PayloadListResponse<Category>>(
+      `/api/categories?where[slug][equals]=${slug}&limit=1`
+    );
 
-  return data.docs[0] ?? null;
+    return data.docs[0] ?? null;
+  } catch (error) {
+    console.error(`Failed to fetch category '${slug}' from Payload:`, error);
+    return null;
+  }
 }
 
 export async function fetchFeaturedProducts(limit = 8): Promise<Product[]> {
@@ -53,10 +62,15 @@ export async function fetchFeaturedProducts(limit = 8): Promise<Product[]> {
     limit: String(limit),
     sort: "-createdAt",
   });
-  const data = await payloadFetch<PayloadListResponse<Product>>(
-    `/api/products?${params.toString()}`
-  );
-  return data.docs;
+  try {
+    const data = await payloadFetch<PayloadListResponse<Product>>(
+      `/api/products?${params.toString()}`
+    );
+    return data.docs;
+  } catch (error) {
+    console.error('Failed to fetch featured products from Payload:', error);
+    return [];
+  }
 }
 
 export async function fetchProductsByCategoryId(
@@ -69,10 +83,15 @@ export async function fetchProductsByCategoryId(
     "where[active][equals]": "true",
     sort: "title",
   });
-  const data = await payloadFetch<PayloadListResponse<Product>>(
-    `/api/products?${params.toString()}`
-  );
-  return data.docs;
+  try {
+    const data = await payloadFetch<PayloadListResponse<Product>>(
+      `/api/products?${params.toString()}`
+    );
+    return data.docs;
+  } catch (error) {
+    console.error(`Failed to fetch products for category '${categoryId}' from Payload:`, error);
+    return [];
+  }
 }
 
 export async function fetchProductBySlug(slug: string): Promise<Product | null> {
@@ -81,23 +100,13 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
     limit: "1",
     "where[slug][equals]": slug,
   });
-  const data = await payloadFetch<PayloadListResponse<Product>>(
-    `/api/products?${params.toString()}`
-  );
-  return data.docs[0] ?? null;
-}
-
-export function resolveVariant(variant: Variant | string | undefined | null): Variant | null {
-  if (!variant) return null;
-  if (typeof variant === "string") {
+  try {
+    const data = await payloadFetch<PayloadListResponse<Product>>(
+      `/api/products?${params.toString()}`
+    );
+    return data.docs[0] ?? null;
+  } catch (error) {
+    console.error(`Failed to fetch product '${slug}' from Payload:`, error);
     return null;
   }
-  return variant;
-}
-
-export function resolveVariants(
-  variants: Array<Variant | string | undefined> | undefined | null
-): Variant[] {
-  if (!variants) return [];
-  return variants.filter((variant): variant is Variant => typeof variant !== "string" && !!variant);
 }

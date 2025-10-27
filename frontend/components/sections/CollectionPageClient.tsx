@@ -4,7 +4,8 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/contexts/CartContext';
 import { useAddToCart } from '@/lib/hooks/useAddToCart';
-import { resolveVariants } from '@/lib/payload';
+import { useToast } from '@/contexts/ToastContext';
+import { resolveVariants } from '@/lib/payload/utils';
 import type { Product, Variant } from '@/types/payload';
 import type { ProductCardData } from '@/lib/constants';
 import { fallbackCategories } from '@/lib/constants';
@@ -37,6 +38,7 @@ export function CollectionPageClient({
 }: CollectionPageClientProps) {
   const { items, addItem } = useCart();
   const { addToCart } = useAddToCart();
+  const { showToast } = useToast();
 
   const cartItemCount = useMemo(
     () => items.reduce((sum, item) => sum + item.quantity, 0),
@@ -57,6 +59,7 @@ export function CollectionPageClient({
 
       if (preferredVariant) {
         addToCart(product, preferredVariant, 1);
+        showToast(`${product.title} added to cart`, { type: 'success' });
         return;
       }
     }
@@ -70,6 +73,7 @@ export function CollectionPageClient({
       price: productCard.priceCents || 0,
       quantity: 1,
     });
+    showToast(`${productCard.title} added to cart`, { type: 'success' });
   };
 
   return (

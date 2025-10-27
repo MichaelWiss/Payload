@@ -1,5 +1,5 @@
 import './page.css';
-import { fetchCategories, fetchFeaturedProducts } from '@/lib/payload';
+import { fetchCategories, fetchFeaturedProducts } from '@/lib/payload/server';
 import { HomePageClient } from '@/components/sections/HomePageClient';
 import type { Category, Product } from '@/types/payload';
 

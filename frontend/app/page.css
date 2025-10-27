@@ -34,7 +34,7 @@ a{
   margin-inline:auto;
   padding-inline:clamp(14px,4vw,28px);
 }
-header{
+.site-header{
   position:sticky;
   top:0;
   z-index:100;

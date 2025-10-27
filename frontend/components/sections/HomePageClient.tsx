@@ -18,6 +18,7 @@ import {
 import { ProductGrid as FeaturedProductGrid } from '@/components/ui/ProductGrid';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { SiteHeader, SiteFooter } from './SiteChrome';
+import { useToast } from '@/contexts/ToastContext';
 
 interface HomePageClientProps {
   categories: Category[];
@@ -38,6 +39,7 @@ export function HomePageClient({ categories, featuredProducts }: HomePageClientP
   const rootRef = useRef<HTMLDivElement>(null);
   const { items, addItem } = useCart();
   const { addToCart } = useAddToCart();
+  const { showToast } = useToast();
 
   const marqueeItems = useMemo(() => {
     const labels = categories
@@ -182,6 +184,7 @@ export function HomePageClient({ categories, featuredProducts }: HomePageClientP
 
   const handleAddFeaturedProduct = (product: Product, variant: Variant) => {
     addToCart(product, variant);
+    showToast(`${product.title} added to cart`, { type: 'success' });
   };
 
   const handleAddFallbackProduct = (product: ProductCardData) => {
@@ -194,6 +197,7 @@ export function HomePageClient({ categories, featuredProducts }: HomePageClientP
       price: product.priceCents || 0,
       quantity: 1,
     });
+    showToast(`${product.title} added to cart`, { type: 'success' });
   };
 
   return (
@@ -365,7 +369,7 @@ function NewsletterSection() {
           className="signup"
           onSubmit={(event) => {
             event.preventDefault();
-            window.alert('Subscribed! ✉️');
+            showToast('Subscribed! ✉️', { type: 'success' });
           }}
           style={{ display: 'flex', gap: '10px' }}
         >

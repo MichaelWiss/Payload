@@ -15,6 +15,7 @@ interface SiteHeaderProps {
   cartItemCount?: number;
   navItems?: NavItem[];
   className?: string;
+  sticky?: boolean;
 }
 
 export function SiteHeader({
@@ -22,6 +23,7 @@ export function SiteHeader({
   cartItemCount = 0,
   navItems,
   className = '',
+  sticky = true,
 }: SiteHeaderProps) {
   const items = navItems ?? [
     { label: 'Shop', href: '#' },
@@ -29,8 +31,16 @@ export function SiteHeader({
     { label: 'Club', href: '#' },
   ];
 
+  const headerClass = [
+    'site-header',
+    sticky ? '' : 'site-header--static',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <header className={className}>
+    <header className={headerClass}>
       <nav className="wrap nav">
         <Link href="/" className="brand keith-logo" aria-label="Outrageous Store logo">
           {BRAND_LETTERS.map((char, index) => (

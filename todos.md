@@ -7,9 +7,9 @@
 4. Implement shared access-control helpers and apply them across collections (orders, discounts, reviews).
 
 ## Frontend Improvements
-5. Refactor the homepage to use reusable components (hero, product grids, badges, newsletter) and align with shared UI tokens.
-6. Correct Next.js route param typing in `frontend/app/products/[slug]/page.tsx`, improve product detail UX (gallery states, loading skeletons), and ensure reliable not-found handling.
-7. Replace blocking `alert` in `ProductDetailClient` with a toast/snackbar component wired into cart context.
+5. (Done) Homepage + collections use shared sections; PDP demo removed.
+6. (Done) Product routes use `{ params: { slug } }`, with loading and graceful empty states.
+7. (Done) Toast system replaces blocking alerts.
 8. Persist cart state to `localStorage` with hydration safeguards for SSR/client parity.
 9. Add end-user facing error states when Payload requests fail (home, categories, product pages, product detail).
 

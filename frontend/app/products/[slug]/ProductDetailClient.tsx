@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { VariantSelector, ProductBlockRenderer } from '@/components/ui';
 import { useCart } from '@/contexts/CartContext';
 import { useAddToCart } from '@/lib/hooks/useAddToCart';
-import { resolveVariants } from '@/lib/payload';
+import { resolveVariants } from '@/lib/payload/utils';
+import { useToast } from '@/contexts/ToastContext';
 import type { Product, Variant, Media } from '@/types/payload';
 import type { ProductCardData } from '@/lib/constants';
 import { ProductCard } from '@/components/ui/ProductCard';
@@ -37,9 +38,12 @@ export function ProductDetailClient({
   const [selectedVariantId, setSelectedVariantId] = useState(defaultVariant?.id || variants[0]?.id || '');
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [confirmation, setConfirmation] = useState('');
+  const { showToast } = useToast();
 
   const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) || variants[0];
+  const announcement =
+    product.seo?.description ??
+    'Get your corporate gift orders in early! Reserve your gifts now!';
 
   const cartItemCount = useMemo(
     () => items.reduce((sum, item) => sum + item.quantity, 0),
@@ -65,8 +69,9 @@ export function ProductDetailClient({
     .map((cat) => (typeof cat === 'string' ? null : cat))
     .filter((cat): cat is NonNullable<typeof cat> => cat !== null);
 
-  const isOutOfStock = selectedVariant.inventory <= 0;
-  const maxQuantity = Math.min(selectedVariant.inventory || 0, 10) || 10;
+  const inventory = typeof selectedVariant.inventory === 'number' ? selectedVariant.inventory : 0;
+  const isOutOfStock = inventory <= 0;
+  const maxQuantity = isOutOfStock ? 1 : Math.min(inventory, 10);
 
   const detailItems = selectedVariant.attributes?.filter((attr) => attr?.name && attr?.value) ?? [];
 
@@ -74,8 +79,7 @@ export function ProductDetailClient({
     if (!selectedVariant) return;
 
     addToCart(product, selectedVariant, quantity);
-    setConfirmation(`Added ${quantity}× ${product.title}`);
-    setTimeout(() => setConfirmation(''), 2400);
+    showToast(`Added ${quantity}× ${product.title}`, { type: 'success' });
   };
 
   const handleAddRelated = (related: Product) => {
@@ -87,13 +91,14 @@ export function ProductDetailClient({
 
     if (primaryVariant) {
       addToCart(related, primaryVariant, 1);
-      setConfirmation(`Added 1× ${related.title}`);
+      showToast(`Added 1× ${related.title}`, { type: 'success' });
     }
   };
 
   return (
     <div className="pdp-layout">
-      <SiteHeader marqueeItems={marqueeItems} cartItemCount={cartItemCount} />
+      <div className="pdp-banner" role="status">{announcement}</div>
+      <SiteHeader marqueeItems={marqueeItems} cartItemCount={cartItemCount} sticky={false} />
       <main className="wrap pdp-body">
         <nav className="breadcrumb">
           <Link href="/">Home</Link>
@@ -139,6 +144,9 @@ export function ProductDetailClient({
           <aside className="pdp-panel">
             <header className="pdp-panel-header">
               <h1>{product.title}</h1>
+              {selectedVariant?.title && (
+                <p className="pdp-panel-subhead">{selectedVariant.title}</p>
+              )}
               {product.description && <p>{product.description}</p>}
             </header>
 
@@ -152,6 +160,8 @@ export function ProductDetailClient({
                 ))}
               </dl>
             )}
+
+            <div className="pdp-panel-divider" aria-hidden />
 
             <div className="pdp-meta">
               <div className="pdp-price">{formatCurrency(selectedVariant.price)}</div>
@@ -176,6 +186,7 @@ export function ProductDetailClient({
 
             <div className="pdp-actions">
               <div className="quantity-controls" aria-live="polite">
+                <span className="sr-only">Selected quantity</span>
                 <button
                   type="button"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -203,10 +214,8 @@ export function ProductDetailClient({
                 {isOutOfStock ? 'Out of Stock' : `Add to Cart — ${formatCurrency(selectedVariant.price)}`}
               </button>
             </div>
-            {confirmation && <p className="pdp-confirmation">{confirmation}</p>}
-
-            {!isOutOfStock && selectedVariant.inventory < 10 && (
-              <p className="pdp-stock-warning">Only {selectedVariant.inventory} left in stock!</p>
+            {!isOutOfStock && inventory < 10 && (
+              <p className="pdp-stock-warning">Only {inventory} left in stock!</p>
             )}
 
             <div className="pdp-meta-grid">
@@ -216,7 +225,7 @@ export function ProductDetailClient({
               </div>
               <div>
                 <strong>Inventory</strong>
-                <span>{selectedVariant.inventory}</span>
+                <span>{inventory}</span>
               </div>
               <div>
                 <strong>Currency</strong>
@@ -235,6 +244,9 @@ export function ProductDetailClient({
         {relatedProductCards.length > 0 && (
           <section className="pdp-related">
             <h2>Similar Products</h2>
+            <p className="pdp-related-copy">
+              Rotating picks from the cellar. Each ships fast and pairs beautifully with a late-night slice.
+            </p>
             <div className="grid home-products">
               {relatedProductCards.map((card) => (
                 <ProductCard
