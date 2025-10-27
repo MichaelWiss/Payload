@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import type { ProductCardData } from '@/lib/constants';
 import { formatPrice } from '@/lib/utils';

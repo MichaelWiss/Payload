@@ -72,7 +72,17 @@ export function Footer() {
       </svg>
       <p className="fine">© 2025 Outrageous Store — Images via Unsplash.</p>
       <section className="final-marquee" aria-hidden>
-        <div className="fm-track">{`${marqueeText} ${marqueeText}`}</div>
+        <div className="marquee-track final-marquee-track">
+          {[0, 1].map((copyIndex) => (
+            <div
+              className="marquee-segment"
+              key={`footer-marquee-${copyIndex}`}
+              aria-hidden={copyIndex > 0}
+            >
+              <span>{marqueeText}</span>
+            </div>
+          ))}
+        </div>
       </section>
     </footer>
   );

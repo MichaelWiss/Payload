@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, type FormEvent } from 'react';
 import type { CSSProperties } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -23,6 +23,7 @@ import { useToast } from '@/contexts/ToastContext';
 interface HomePageClientProps {
   categories: Category[];
   featuredProducts: Product[];
+  loadErrors?: string[];
 }
 
 interface ProductSectionProps {
@@ -35,7 +36,11 @@ interface ProductSectionProps {
 
 type StageStyle = CSSProperties & { '--stage-bg'?: string };
 
-export function HomePageClient({ categories, featuredProducts }: HomePageClientProps) {
+export function HomePageClient({
+  categories,
+  featuredProducts,
+  loadErrors = [],
+}: HomePageClientProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const { items, addItem } = useCart();
   const { addToCart } = useAddToCart();
@@ -64,6 +69,12 @@ export function HomePageClient({ categories, featuredProducts }: HomePageClientP
     () => items.reduce((sum, item) => sum + item.quantity, 0),
     [items]
   );
+
+  const loadErrorMessages = useMemo(
+    () => Array.from(new Set(loadErrors.filter(Boolean))),
+    [loadErrors]
+  );
+  const hasLoadErrors = loadErrorMessages.length > 0;
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -204,6 +215,16 @@ export function HomePageClient({ categories, featuredProducts }: HomePageClientP
     <div ref={rootRef}>
       <div className="progress" aria-hidden />
       <SiteHeader marqueeItems={marqueeItems} cartItemCount={cartItemCount} />
+      {hasLoadErrors && (
+        <section className="alert alert--error" role="status">
+          <p>Some storefront data is temporarily unavailable:</p>
+          <ul>
+            {loadErrorMessages.map((message, index) => (
+              <li key={`home-error-${index}`}>{message}</li>
+            ))}
+          </ul>
+        </section>
+      )}
       <HeroSection />
       <main className="wrap" id="main">
         <ChipsMarquee marqueeItems={marqueeItems} />
@@ -215,7 +236,11 @@ export function HomePageClient({ categories, featuredProducts }: HomePageClientP
           onAddFallbackProduct={handleAddFallbackProduct}
         />
         <BadgesSection />
-        <NewsletterSection />
+        <NewsletterSection
+          onSubscribe={(_email) => {
+            showToast('Subscribed! ✉️', { type: 'success' });
+          }}
+        />
         <HomeProductSection
           title="Best Sellers"
           products={bestSellerProducts}
@@ -284,14 +309,36 @@ function HeroSection() {
 }
 
 function ChipsMarquee({ marqueeItems }: { marqueeItems: string[] }) {
+  const displayItems = useMemo(() => {
+    if (marqueeItems.length === 0) return [];
+    const minItems = 8;
+    const maxLoops = 6;
+    const loops = Math.min(maxLoops, Math.max(2, Math.ceil(minItems / marqueeItems.length)));
+    return Array.from({ length: loops }).flatMap(() => marqueeItems);
+  }, [marqueeItems]);
+
+  if (displayItems.length === 0) {
+    return null;
+  }
+
+  const segments = [0, 1].map((copyIndex) => (
+    <div
+      className="marquee-segment"
+      key={`chip-segment-${copyIndex}`}
+      aria-hidden={copyIndex > 0}
+    >
+      {displayItems.map((chip, index) => (
+        <div className="chip" key={`chip-${copyIndex}-${index}`}>
+          {chip}
+        </div>
+      ))}
+    </div>
+  ));
+
   return (
     <section className="chips reveal">
       <div className="marquee" aria-hidden>
-        {[...marqueeItems, ...marqueeItems].map((chip, index) => (
-          <div className="chip" key={`chip-${index}`}>
-            {chip}
-          </div>
-        ))}
+        <div className="marquee-track">{segments}</div>
       </div>
     </section>
   );
@@ -354,7 +401,24 @@ function BadgesSection() {
   );
 }
 
-function NewsletterSection() {
+interface NewsletterSectionProps {
+  onSubscribe: (email: string) => void;
+}
+
+function NewsletterSection({ onSubscribe }: NewsletterSectionProps) {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const rawEmail = (formData.get('email') ?? '').toString().trim();
+
+    if (rawEmail) {
+      onSubscribe(rawEmail);
+    }
+
+    form.reset();
+  };
+
   return (
     <section className="zine reveal">
       <div className="row">
@@ -365,15 +429,15 @@ function NewsletterSection() {
           </h3>
           <p>One spicy email a month about the culture around pizza and pours.</p>
         </div>
-        <form
-          className="signup"
-          onSubmit={(event) => {
-            event.preventDefault();
-            showToast('Subscribed! ✉️', { type: 'success' });
-          }}
-          style={{ display: 'flex', gap: '10px' }}
-        >
-          <input className="input" placeholder="Email address" required />
+        <form className="signup" onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px' }}>
+          <input
+            className="input"
+            name="email"
+            type="email"
+            placeholder="Email address"
+            autoComplete="email"
+            required
+          />
           <button className="btn" style={{ background: 'var(--pool)' }} type="submit">
             Sign Up
           </button>

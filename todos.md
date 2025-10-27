@@ -10,12 +10,12 @@
 5. (Done) Homepage + collections use shared sections; PDP demo removed.
 6. (Done) Product routes use `{ params: { slug } }`, with loading and graceful empty states.
 7. (Done) Toast system replaces blocking alerts.
-8. Persist cart state to `localStorage` with hydration safeguards for SSR/client parity.
-9. Add end-user facing error states when Payload requests fail (home, categories, product pages, product detail).
+8. (Done) Persist cart state to `localStorage` with hydration safeguards for SSR/client parity.
+9. (Done) Add end-user facing error states when Payload requests fail (home, categories, product pages, product detail).
 
 ## Collections & Listings
-12. Wire collection listing pages to Payload (category index, `/collections`), replacing placeholders with live data.
-13. Implement collection detail pages with hero content, filters, and pagination backed by Payload queries.
+12. (Done) Wire collection listing pages to Payload (category index, `/collections`), replacing placeholders with live data.
+13. (Done) Implement collection detail pages with hero content, filters, and pagination backed by Payload queries.
 
 ## Polish & Verification
 10. Centralize typography/brand tokens for gradients, strokes, and shadows referenced across UI components.

@@ -1,18 +1,33 @@
-import '../page.css';
-import '../collections/collections.css';
-import Link from 'next/link';
-import type { Metadata } from 'next';
-import { fetchCategories } from '@/lib/payload/server';
-import { SiteHeader, SiteFooter } from '@/components/sections/SiteChrome';
+import "../page.css";
+import "../collections/collections.css";
+import Link from "next/link";
+import type { Metadata } from "next";
+import { fetchCategories } from "@/lib/payload/server";
+import { SiteHeader, SiteFooter } from "@/components/sections/SiteChrome";
+import { fallbackCategories } from "@/lib/constants";
+import type { Category } from "@/types/payload";
 
 export const metadata: Metadata = {
-  title: 'Shop by Category — Outrageous Store',
-  description: 'Browse our curated collection of products by category.',
+  title: "Shop by Category — Outrageous Store",
+  description: "Browse our curated collection of products by category.",
 };
 
 export default async function CategoriesPage() {
-  const categories = await fetchCategories();
-  const marqueeItems = categories.map((category) => category.title).filter(Boolean);
+  let categories: Category[] = [];
+  let loadError: string | null = null;
+
+  try {
+    categories = await fetchCategories();
+  } catch (error) {
+    loadError =
+      error instanceof Error
+        ? error.message
+        : "We couldn't load categories just now. Please try again soon.";
+  }
+
+  const marqueeItems = categories.length
+    ? categories.map((category) => category.title).filter(Boolean)
+    : fallbackCategories;
 
   return (
     <div className="collection-layout">
@@ -33,6 +48,12 @@ export default async function CategoriesPage() {
             <p>Discover artisan products, zines, and tasty curios tailored to every palate.</p>
           </div>
         </section>
+
+        {loadError ? (
+          <section className="alert alert--error" role="status">
+            <p>{loadError}</p>
+          </section>
+        ) : null}
 
         {categories.length > 0 ? (
           <div className="grid home-products">
@@ -68,7 +89,11 @@ export default async function CategoriesPage() {
           </div>
         ) : (
           <div className="collection-empty">
-            <p>No categories available yet. Check back soon!</p>
+            <p>
+              {loadError
+                ? 'The category list is unavailable right now. Try refreshing in a moment.'
+                : 'No categories available yet. Check back soon!'}
+            </p>
           </div>
         )}
       </main>

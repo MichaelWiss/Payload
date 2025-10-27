@@ -29,6 +29,11 @@ export interface Variant {
   sku: string;
   price: number;
   inventory: number;
+  currency?: string | null;
+  attributes?: Array<{
+    name?: string | null;
+    value?: string | null;
+  }>;
 }
 
 export interface ProductBlock {

@@ -11,6 +11,19 @@ type FetchOptions = RequestInit & {
   };
 };
 
+function ensureError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  return new Error(typeof error === "string" ? error : "Unknown error");
+}
+
+function handlePayloadError(action: string, error: unknown): never {
+  const err = ensureError(error);
+  console.error(`Failed to ${action} from Payload:`, err);
+  throw new Error(`We couldn't ${action} from Payload right now. Please try again shortly.`);
+}
+
 async function payloadFetch<T>(path: string, init?: FetchOptions): Promise<T> {
   const url = `${env.apiUrl}${path}`;
   const res = await fetch(url, {
@@ -37,8 +50,7 @@ export async function fetchCategories(): Promise<Category[]> {
     );
     return data.docs;
   } catch (error) {
-    console.error('Failed to fetch categories from Payload:', error);
-    return [];
+    handlePayloadError("fetch categories", error);
   }
 }
 
@@ -47,11 +59,9 @@ export async function fetchCategoryBySlug(slug: string): Promise<Category | null
     const data = await payloadFetch<PayloadListResponse<Category>>(
       `/api/categories?where[slug][equals]=${slug}&limit=1`
     );
-
     return data.docs[0] ?? null;
   } catch (error) {
-    console.error(`Failed to fetch category '${slug}' from Payload:`, error);
-    return null;
+    handlePayloadError(`fetch category “${slug}”`, error);
   }
 }
 
@@ -62,35 +72,53 @@ export async function fetchFeaturedProducts(limit = 8): Promise<Product[]> {
     limit: String(limit),
     sort: "-createdAt",
   });
+
   try {
     const data = await payloadFetch<PayloadListResponse<Product>>(
       `/api/products?${params.toString()}`
     );
     return data.docs;
   } catch (error) {
-    console.error('Failed to fetch featured products from Payload:', error);
-    return [];
+    handlePayloadError("fetch featured products", error);
   }
 }
 
+type ProductQueryOptions = {
+  page?: number;
+  limit?: number;
+  sort?: string;
+  search?: string;
+};
+
 export async function fetchProductsByCategoryId(
-  categoryId: string
-): Promise<Product[]> {
+  categoryId: string,
+  options: ProductQueryOptions = {}
+): Promise<PayloadListResponse<Product>> {
+  const limit = options.limit ?? 12;
+  const page = options.page ?? 1;
+
   const params = new URLSearchParams({
     depth: "2",
-    limit: "50",
+    limit: String(limit),
+    page: String(page),
     "where[categories][contains]": categoryId,
     "where[active][equals]": "true",
-    sort: "title",
   });
+
+  if (options.sort) {
+    params.set("sort", options.sort);
+  }
+
+  if (options.search) {
+    params.set("where[title][like]", `%${options.search}%`);
+  }
+
   try {
-    const data = await payloadFetch<PayloadListResponse<Product>>(
+    return await payloadFetch<PayloadListResponse<Product>>(
       `/api/products?${params.toString()}`
     );
-    return data.docs;
   } catch (error) {
-    console.error(`Failed to fetch products for category '${categoryId}' from Payload:`, error);
-    return [];
+    handlePayloadError(`fetch products for category “${categoryId}”`, error);
   }
 }
 
@@ -100,13 +128,13 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
     limit: "1",
     "where[slug][equals]": slug,
   });
+
   try {
     const data = await payloadFetch<PayloadListResponse<Product>>(
       `/api/products?${params.toString()}`
     );
     return data.docs[0] ?? null;
   } catch (error) {
-    console.error(`Failed to fetch product '${slug}' from Payload:`, error);
-    return null;
+    handlePayloadError(`fetch product “${slug}”`, error);
   }
 }

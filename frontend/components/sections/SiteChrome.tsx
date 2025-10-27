@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { marqueeText } from '@/lib/constants';
 
@@ -39,6 +40,14 @@ export function SiteHeader({
     .filter(Boolean)
     .join(' ');
 
+  const tickerItems = useMemo(() => {
+    if (!marqueeItems || marqueeItems.length === 0) return [];
+    const minItems = 6;
+    const maxLoops = 6;
+    const loops = Math.min(maxLoops, Math.max(2, Math.ceil(minItems / marqueeItems.length)));
+    return Array.from({ length: loops }).flatMap(() => marqueeItems);
+  }, [marqueeItems]);
+
   return (
     <header className={headerClass}>
       <nav className="wrap nav">
@@ -60,12 +69,20 @@ export function SiteHeader({
           </Link>
         </div>
       </nav>
-      {marqueeItems.length > 0 && (
+      {tickerItems.length > 0 && (
         <div className="ticker" aria-hidden>
-          <div className="wrap">
-            <div className="row">
-              {[...marqueeItems, ...marqueeItems].map((text, index) => (
-                <span key={`ticker-${index}`}>{text}</span>
+          <div className="wrap ticker-wrap">
+            <div className="marquee-track ticker-track">
+              {[0, 1].map((copyIndex) => (
+                <div
+                  className="marquee-segment"
+                  key={`ticker-segment-${copyIndex}`}
+                  aria-hidden={copyIndex > 0}
+                >
+                  {tickerItems.map((text, index) => (
+                    <span key={`ticker-${copyIndex}-${index}`}>{text}</span>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
@@ -148,7 +165,17 @@ export function SiteFooter() {
       </svg>
       <p className="fine">© 2025 Outrageous Store — Images via Unsplash.</p>
       <section className="final-marquee" aria-hidden>
-        <div className="fm-track">{`${marqueeText} ${marqueeText}`}</div>
+        <div className="marquee-track final-marquee-track">
+          {[0, 1].map((copyIndex) => (
+            <div
+              className="marquee-segment"
+              key={`fm-segment-${copyIndex}`}
+              aria-hidden={copyIndex > 0}
+            >
+              <span>{marqueeText}</span>
+            </div>
+          ))}
+        </div>
       </section>
     </footer>
   );

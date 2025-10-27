@@ -1,4 +1,4 @@
-import '../page.css';
+import '../../page.css';
 import './product-detail.css';
 
 export default function LoadingProductPage() {

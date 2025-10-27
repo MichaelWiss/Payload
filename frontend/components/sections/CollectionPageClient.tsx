@@ -1,7 +1,15 @@
 'use client';
 
-import { useMemo } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+  type FormEvent,
+  type ChangeEvent,
+} from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { useAddToCart } from '@/lib/hooks/useAddToCart';
 import { useToast } from '@/contexts/ToastContext';
@@ -25,6 +33,17 @@ interface CollectionPageClientProps {
   breadcrumbs?: BreadcrumbItem[];
   emptyMessage?: string;
   sourceProducts?: Product[];
+  loadErrors?: string[];
+  pagination?: {
+    page: number;
+    totalPages: number;
+    totalDocs?: number;
+  };
+  pageSize?: number;
+  sortOptions?: Array<{ label: string; value: string }>;
+  selectedSort?: string;
+  searchTerm?: string;
+  enableSearch?: boolean;
 }
 
 export function CollectionPageClient({
@@ -35,10 +54,25 @@ export function CollectionPageClient({
   breadcrumbs,
   emptyMessage = 'No products available at the moment.',
   sourceProducts,
+  loadErrors = [],
+  pagination,
+  pageSize,
+  sortOptions,
+  selectedSort,
+  searchTerm = '',
+  enableSearch = true,
 }: CollectionPageClientProps) {
   const { items, addItem } = useCart();
   const { addToCart } = useAddToCart();
   const { showToast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+  const [searchValue, setSearchValue] = useState(searchTerm);
+
+  useEffect(() => {
+    setSearchValue(searchTerm);
+  }, [searchTerm]);
 
   const cartItemCount = useMemo(
     () => items.reduce((sum, item) => sum + item.quantity, 0),
@@ -46,6 +80,59 @@ export function CollectionPageClient({
   );
 
   const tickerItems = marqueeItems && marqueeItems.length ? marqueeItems : fallbackCategories;
+  const loadErrorMessages = useMemo(
+    () => Array.from(new Set(loadErrors.filter(Boolean))),
+    [loadErrors]
+  );
+  const hasLoadErrors = loadErrorMessages.length > 0;
+  const sortOptionsAvailable = Boolean(sortOptions && sortOptions.length);
+  const currentPage = pagination?.page ?? 1;
+  const totalPages = pagination?.totalPages ?? 1;
+  const totalDocs = pagination?.totalDocs;
+  const sortValue = selectedSort ?? sortOptions?.[0]?.value ?? '';
+
+  const updateQuery = (updates: Record<string, string | null>, resetPage = true) => {
+    const nextParams = new URLSearchParams(searchParams?.toString() ?? '');
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === '') {
+        nextParams.delete(key);
+      } else {
+        nextParams.set(key, value);
+      }
+    });
+
+    if (resetPage) {
+      nextParams.delete('page');
+    }
+
+    const queryString = nextParams.toString();
+    startTransition(() => {
+      router.push(queryString ? `?${queryString}` : '?');
+    });
+  };
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    updateQuery({ search: searchValue.trim() || null });
+  };
+
+  const handleSortChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    updateQuery({ sort: event.target.value }, true);
+  };
+
+  const navigateToPage = (nextPage: number) => {
+    const nextParams = new URLSearchParams(searchParams?.toString() ?? '');
+    if (nextPage <= 1) {
+      nextParams.delete('page');
+    } else {
+      nextParams.set('page', String(nextPage));
+    }
+
+    const queryString = nextParams.toString();
+    startTransition(() => {
+      router.push(queryString ? `?${queryString}` : '?');
+    });
+  };
 
   const handleAddToCart = (productCard: ProductCardData) => {
     const product = sourceProducts?.find((item) => item.slug === productCard.slug);
@@ -76,6 +163,23 @@ export function CollectionPageClient({
     showToast(`${productCard.title} added to cart`, { type: 'success' });
   };
 
+  const renderPaginationMeta = () => {
+    if (!pagination || totalPages <= 1 || !pageSize || typeof totalDocs !== 'number') {
+      return null;
+    }
+
+    const start = (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalDocs);
+    return (
+      <span>
+        Page {currentPage} of {totalPages} · Showing {start}–{end} of {totalDocs}
+      </span>
+    );
+  };
+
+  const shouldShowToolbar =
+    (enableSearch ?? true) || sortOptionsAvailable || Boolean(pagination);
+
   return (
     <div className="collection-layout">
       <div className="progress" aria-hidden />
@@ -103,6 +207,59 @@ export function CollectionPageClient({
           </div>
         </section>
 
+        {shouldShowToolbar && (
+          <section className="collection-toolbar" aria-label="Collection filters">
+            {enableSearch && (
+              <form className="collection-toolbar__search" onSubmit={handleSearchSubmit}>
+                <label htmlFor="collection-search" className="sr-only">
+                  Search products
+                </label>
+                <input
+                  id="collection-search"
+                  type="search"
+                  name="search"
+                  placeholder="Search this collection"
+                  value={searchValue}
+                  onChange={(event) => setSearchValue(event.target.value)}
+                  autoComplete="off"
+                />
+                <button className="btn" type="submit" disabled={isPending}>
+                  {isPending ? 'Searching…' : 'Search'}
+                </button>
+              </form>
+            )}
+
+            {sortOptionsAvailable && (
+              <div className="collection-toolbar__filters">
+                <label htmlFor="collection-sort">Sort by</label>
+                <select
+                  id="collection-sort"
+                  value={sortValue}
+                  onChange={handleSortChange}
+                  disabled={isPending}
+                >
+                  {sortOptions!.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </section>
+        )}
+
+        {hasLoadErrors && (
+          <section className="alert alert--error" role="status">
+            <p>Heads up: some data is missing:</p>
+            <ul>
+              {loadErrorMessages.map((message, index) => (
+                <li key={`collection-error-${index}`}>{message}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {products.length > 0 ? (
           <section className="grid home-products">
             {products.map((product) => (
@@ -121,6 +278,32 @@ export function CollectionPageClient({
               Back to Home
             </Link>
           </div>
+        )}
+
+        {pagination && totalPages > 1 && (
+          <nav className="collection-pagination" aria-label="Collection pagination">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => navigateToPage(currentPage - 1)}
+              disabled={isPending || currentPage <= 1}
+            >
+              Prev
+            </button>
+            {renderPaginationMeta() ?? (
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+            )}
+            <button
+              type="button"
+              className="btn"
+              onClick={() => navigateToPage(currentPage + 1)}
+              disabled={isPending || currentPage >= totalPages}
+            >
+              Next
+            </button>
+          </nav>
         )}
       </main>
       <SiteFooter />

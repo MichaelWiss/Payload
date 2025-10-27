@@ -18,6 +18,7 @@ interface ProductDetailClientProps {
   relatedProducts: Product[];
   relatedProductCards: ProductCardData[];
   marqueeItems: string[];
+  loadErrors?: string[];
 }
 
 export function ProductDetailClient({
@@ -25,6 +26,7 @@ export function ProductDetailClient({
   relatedProducts,
   relatedProductCards,
   marqueeItems,
+  loadErrors = [],
 }: ProductDetailClientProps) {
   const { items } = useCart();
   const { addToCart } = useAddToCart();
@@ -49,6 +51,12 @@ export function ProductDetailClient({
     () => items.reduce((sum, item) => sum + item.quantity, 0),
     [items]
   );
+
+  const loadErrorMessages = useMemo(
+    () => Array.from(new Set(loadErrors.filter(Boolean))),
+    [loadErrors]
+  );
+  const hasLoadErrors = loadErrorMessages.length > 0;
 
   if (!selectedVariant) {
     return (
@@ -100,6 +108,16 @@ export function ProductDetailClient({
       <div className="pdp-banner" role="status">{announcement}</div>
       <SiteHeader marqueeItems={marqueeItems} cartItemCount={cartItemCount} sticky={false} />
       <main className="wrap pdp-body">
+        {hasLoadErrors && (
+          <section className="alert alert--error" role="status">
+            <p>Some product details are unavailable:</p>
+            <ul>
+              {loadErrorMessages.map((message, index) => (
+                <li key={`pdp-error-${index}`}>{message}</li>
+              ))}
+            </ul>
+          </section>
+        )}
         <nav className="breadcrumb">
           <Link href="/">Home</Link>
           <span className="breadcrumb-separator">/</span>
