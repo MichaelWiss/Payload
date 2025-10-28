@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { marqueeText } from '@/lib/constants';
 
 const BRAND_LETTERS = Array.from('OUTRAGEOUS');
+const FINAL_MARQUEE_REPEAT = 4;
 
 interface NavItem {
   label: string;
@@ -42,8 +43,8 @@ export function SiteHeader({
 
   const tickerItems = useMemo(() => {
     if (!marqueeItems || marqueeItems.length === 0) return [];
-    const minItems = 6;
-    const maxLoops = 6;
+    const minItems = 50;
+    const maxLoops = 80;
     const loops = Math.min(maxLoops, Math.max(2, Math.ceil(minItems / marqueeItems.length)));
     return Array.from({ length: loops }).flatMap(() => marqueeItems);
   }, [marqueeItems]);
@@ -172,7 +173,9 @@ export function SiteFooter() {
               key={`fm-segment-${copyIndex}`}
               aria-hidden={copyIndex > 0}
             >
-              <span>{marqueeText}</span>
+              {Array.from({ length: FINAL_MARQUEE_REPEAT }).map((_, repeatIndex) => (
+                <span key={`fm-copy-${copyIndex}-${repeatIndex}`}>{marqueeText}</span>
+              ))}
             </div>
           ))}
         </div>

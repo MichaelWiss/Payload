@@ -296,8 +296,8 @@ function HeroSection() {
 function ChipsMarquee({ marqueeItems }: { marqueeItems: string[] }) {
   const displayItems = useMemo(() => {
     if (marqueeItems.length === 0) return [];
-    const minItems = 8;
-    const maxLoops = 6;
+    const minItems = 50;
+    const maxLoops = 80;
     const loops = Math.min(maxLoops, Math.max(2, Math.ceil(minItems / marqueeItems.length)));
     return Array.from({ length: loops }).flatMap(() => marqueeItems);
   }, [marqueeItems]);
