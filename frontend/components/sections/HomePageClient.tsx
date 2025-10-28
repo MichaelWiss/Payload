@@ -19,6 +19,7 @@ import { ProductGrid as FeaturedProductGrid } from '@/components/ui/ProductGrid'
 import { ProductCard } from '@/components/ui/ProductCard';
 import { SiteHeader, SiteFooter } from './SiteChrome';
 import { useToast } from '@/contexts/ToastContext';
+import Image from 'next/image';
 
 interface HomePageClientProps {
   categories: Category[];
@@ -260,30 +261,14 @@ function HeroSection() {
     <section className="hero">
       <div className="wrap">
         <div className="collage">
-          <div className="sticker s1">
-            <img
-              src="https://images.unsplash.com/photo-1520975922203-b6b8406f9a72?q=80&w=600&auto=format&fit=crop"
-              alt="Sticker collage"
-            />
-          </div>
-          <div className="sticker s2">
-            <img
-              src="https://images.unsplash.com/photo-1524594081293-190a2fe0baae?q=80&w=600&auto=format&fit=crop"
-              alt="Sticker collage"
-            />
-          </div>
-          <div className="sticker s3">
-            <img
-              src="https://images.unsplash.com/photo-1541976076755-3192f9a8a3c2?q=80&w=600&auto=format&fit=crop"
-              alt="Sticker collage"
-            />
-          </div>
-          <div className="sticker s4">
-            <img
-              src="https://images.unsplash.com/photo-1541976076753-7f2d4b0c7a5e?q=80&w=600&auto=format&fit=crop"
-              alt="Sticker collage"
-            />
-          </div>
+          <Image
+            src="/hero/mark-stosberg-m_2fahudup4-unsplash.jpg"
+            alt="Palm trees under a bright sky"
+            fill
+            priority
+            sizes="(max-width: 768px) 100vw, 50vw"
+            style={{ objectFit: 'cover' }}
+          />
         </div>
         <div>
           <span className="kicker">Indie bottles · zines · snacks</span>
