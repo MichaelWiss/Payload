@@ -43,8 +43,8 @@ export function SiteHeader({
 
   const tickerItems = useMemo(() => {
     if (!marqueeItems || marqueeItems.length === 0) return [];
-    const minItems = 50;
-    const maxLoops = 80;
+    const minItems = 12;
+    const maxLoops = 10;
     const loops = Math.min(maxLoops, Math.max(2, Math.ceil(minItems / marqueeItems.length)));
     return Array.from({ length: loops }).flatMap(() => marqueeItems);
   }, [marqueeItems]);

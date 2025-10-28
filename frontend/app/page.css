@@ -110,7 +110,7 @@ a{
 }
 .ticker-track{
   --marquee-gap:28px;
-  --marquee-duration:36s;
+  --marquee-duration:90s;
   padding:10px 0;
   font-weight:900;
 }
@@ -250,10 +250,11 @@ h1{
 }
 .marquee{
   --marquee-gap:14px;
-  --marquee-duration:44s;
+  --marquee-duration:110s;
   position:relative;
   overflow:hidden;
   padding:14px;
+  perspective:1000px;
 }
 .marquee-track{
   display:flex;
@@ -261,6 +262,9 @@ h1{
   min-width:max-content;
   will-change:transform;
   animation:marquee-scroll var(--marquee-duration) linear infinite;
+  backface-visibility:hidden;
+  contain:layout;
+  transform:translateZ(0);
 }
 .marquee-segment{
   display:flex;
@@ -630,11 +634,10 @@ footer{
 }
 .final-marquee .marquee-track{
   --marquee-gap:34px;
-  --marquee-duration:32s;
+  --marquee-duration:80s;
   padding:22px 34px;
   font-weight:1000;
   font-size:clamp(18px,2.8vw,34px);
-  text-transform:uppercase;
 }
 .final-marquee .marquee-track span{
   display:inline-block;
